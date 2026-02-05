@@ -16,48 +16,33 @@ RUN apt-get update \
         flex \
         g++ \
         gcc \
+        git \
         libboost-program-options-dev \
         libgmp-dev \
         libm4ri-dev \
         libtinfo-dev \
         make \
+        pkg-config \
         wget \
         zlib1g-dev \
  && rm -rf /var/lib/apt/lists/*
 
-# Build CMS
-WORKDIR /cms
-RUN wget -O cryptominisat.tgz https://github.com/msoos/cryptominisat/archive/5.11.21.tar.gz \
- && tar xvf cryptominisat.tgz --strip-components 1 \
- && mkdir build && cd build \
- && cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DENABLE_ASSERTIONS=OFF \
-        -DSTATICCOMPILE=ON \
- && cmake --build . \
- && cmake --install .
-
-# Build MiniSat
-WORKDIR /minisat
-RUN wget -O minisat.tgz https://github.com/stp/minisat/archive/releases/2.2.1.tar.gz \
- && tar xvf minisat.tgz --strip-components 1 \
- && mkdir build && cd build \
- && cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
- && cmake --build . \
- && cmake --install .
-
-# Build STP
-WORKDIR /stp/build
 COPY . /stp
-RUN cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DENABLE_ASSERTIONS=OFF \
-        -DSTATICCOMPILE=ON \
- && cmake --build . \
- && cmake --install .
 
-# Set up to run in a minimal container
-FROM scratch
-COPY --from=builder /usr/local/bin/stp /stp
-ENTRYPOINT ["/stp", "--SMTLIB2"]
+WORKDIR /stp
+RUN ./scripts/deps/setup-gtest.sh
+RUN ./scripts/deps/setup-outputcheck.sh
+RUN ./scripts/deps/setup-cms.sh
+RUN ./scripts/deps/setup-minisat.sh
+
+RUN mkdir build
+WORKDIR /stp/build
+
+RUN cmake .. -DSTATICCOMPILE=ON \
+  && cmake --build . \
+  && cmake --install .
+
+# # Set up to run in a minimal container
+# FROM scratch
+# COPY --from=builder /usr/local/bin/stp /stp
+# ENTRYPOINT ["/stp", "--SMTLIB2"]
