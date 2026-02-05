@@ -43,6 +43,6 @@ RUN cmake .. -DSTATICCOMPILE=ON \
   && cmake --install .
 
 # # Set up to run in a minimal container
-# FROM scratch
-# COPY --from=builder /usr/local/bin/stp /stp
-# ENTRYPOINT ["/stp", "--SMTLIB2"]
+FROM scratch
+COPY --from=builder /usr/local/bin/stp /stp
+ENTRYPOINT ["/stp", "--SMTLIB2"]
