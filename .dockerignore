@@ -12,11 +12,7 @@ examples
 .gitmodules
 INSTALL.md
 .kdev4
-LICENSE
-LICENSE_COMPONENTS
 papers
-README.markdown
-scripts
 stp.kdev4
 stuff*
 tests
