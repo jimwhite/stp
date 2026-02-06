@@ -7,9 +7,7 @@ changed
 coverage.info
 .directory
 examples
-.git
 .gitignore
-.gitmodules
 INSTALL.md
 .kdev4
 papers

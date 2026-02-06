@@ -34,7 +34,11 @@ cadiback: cadical $(DEPS_DIR)cadiback/libcadiback.a
 
 $(DEPS_DIR)cadiback/libcadiback.a:
 	cd $(DEPS_DIR)cadiback && \
+	echo '#define VERSION "1.0"' > config.hpp && \
+	echo '#define GITID "submodule"' >> config.hpp && \
+	echo '#define BUILD ""' >> config.hpp && \
 	CXXFLAGS="-fPIC" ./configure && \
+	touch config.hpp && \
 	make -j$(NPROC)
 
 # CryptoMiniSat (depends on cadical, cadiback)
