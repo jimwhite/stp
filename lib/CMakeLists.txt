@@ -132,7 +132,18 @@ add_subdirectory(extlib-abc)
 # Link to the ABC library target
 add_dependencies(stp libabc-pic)
 # Use the full path to the library instead of the target name for export compatibility
+# ABC uses CaDiCaL, so we need to link it after libabc-pic
 set(stp_link_libs ${MINISAT_LIBRARIES} $<TARGET_FILE:libabc-pic>)
+
+# Find cadical library built by setup-cms.sh (ABC depends on it)
+find_library(CADICAL_LIBRARY
+    NAMES cadical
+    PATHS ${PROJECT_SOURCE_DIR}/deps/cadical/build
+    NO_DEFAULT_PATH
+)
+if (CADICAL_LIBRARY)
+    set(stp_link_libs ${stp_link_libs} ${CADICAL_LIBRARY})
+endif()
 
 if (USE_CRYPTOMINISAT)
     if (STATICCOMPILE)
