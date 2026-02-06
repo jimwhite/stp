@@ -30,7 +30,7 @@ git clone https://github.com/msoos/cryptominisat "${dep}"
 cd "${dep}"
 git checkout -d release/5.13.0
 mkdir build && cd build
-cmake RUN cmake .. \
+cmake .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" \
       -DENABLE_ASSERTIONS=OFF \

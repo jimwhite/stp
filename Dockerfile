@@ -30,13 +30,11 @@ RUN apt-get update \
 COPY . /stp
 WORKDIR /stp
 
-# Remove ABC's bundled cadical to avoid duplicate symbols with CryptoMiniSat's cadical
+# Remove ABC's bundled cadical to avoid duplicate symbols with our cadical
 RUN sed -i 's| src/sat/cadical||' lib/extlib-abc/Makefile
 
-RUN ./scripts/deps/setup-gtest.sh \
-       && ./scripts/deps/setup-outputcheck.sh \
-       && ./scripts/deps/setup-cms.sh \
-       && ./scripts/deps/setup-minisat.sh
+# Build dependencies from submodules
+RUN make -f deps/Makefile all
 
 RUN mkdir build \
        && cd build \

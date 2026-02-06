@@ -1,3 +1,21 @@
 [submodule "lib/extlib-abc"]
 	path = lib/extlib-abc
 	url = https://github.com/berkeley-abc/abc.git
+[submodule "deps/cadical"]
+	path = deps/cadical
+	url = https://github.com/meelgroup/cadical
+[submodule "deps/cadiback"]
+	path = deps/cadiback
+	url = https://github.com/meelgroup/cadiback
+[submodule "deps/cryptominisat"]
+	path = deps/cryptominisat
+	url = https://github.com/msoos/cryptominisat
+[submodule "deps/minisat"]
+	path = deps/minisat
+	url = https://github.com/stp/minisat
+[submodule "deps/gtest"]
+	path = deps/gtest
+	url = https://github.com/stp/googletest
+[submodule "deps/OutputCheck"]
+	path = deps/OutputCheck
+	url = https://github.com/stp/OutputCheck
