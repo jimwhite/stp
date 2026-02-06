@@ -30,12 +30,15 @@ RUN apt-get update \
 COPY . /stp
 WORKDIR /stp
 
-# Remove ABC's bundled cadical to avoid duplicate symbols with our cadical
-RUN sed -i 's| src/sat/cadical||' lib/extlib-abc/Makefile
-
 # Build dependencies from submodules
 RUN make -f deps/Makefile all
 
+# Remove ABC's cadical and eslim modules to avoid symbol conflicts with deps/cadical.
+# ABC bundles a modified cadical 2.2.0 internally; eslim depends on that internal API.
+# See DEPENDENCIES.md for full explanation of the architecture.
+RUN sed -i 's|src/sat/cadical ||; s|src/opt/eslim ||' lib/extlib-abc/Makefile
+
+# Build STP
 RUN mkdir build \
        && cd build \
        && cmake .. \
@@ -44,6 +47,9 @@ RUN mkdir build \
        -DSTATICCOMPILE=ON \
        && cmake --build . \
        && cmake --install .
+
+# Run STP tests
+RUN cd build && ctest --output-on-failure
 
 # # Set up to run in a minimal container
 FROM scratch

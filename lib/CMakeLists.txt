@@ -135,7 +135,7 @@ add_dependencies(stp libabc-pic)
 # ABC uses CaDiCaL, so we need to link it after libabc-pic
 set(stp_link_libs ${MINISAT_LIBRARIES} $<TARGET_FILE:libabc-pic>)
 
-# Find cadical library built by setup-cms.sh (ABC depends on it)
+# Find cadical library built by deps/Makefile (cadiback/cryptominisat depends on it)
 find_library(CADICAL_LIBRARY
     NAMES cadical
     PATHS ${PROJECT_SOURCE_DIR}/deps/cadical/build

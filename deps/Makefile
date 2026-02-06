@@ -84,6 +84,23 @@ $(DEPS_DIR)gtest/build/lib/libgtest.a:
 outputcheck:
 	@test -d $(DEPS_DIR)OutputCheck && echo "OutputCheck ready" || echo "OutputCheck submodule not found"
 
+# Test targets
+.PHONY: test test-cadical test-cryptominisat test-minisat test-gtest
+
+test: test-cadical test-cryptominisat test-minisat
+
+test-cadical:
+	cd $(DEPS_DIR)cadical && make test
+
+test-cryptominisat:
+	cd $(DEPS_DIR)cryptominisat/build && ctest --output-on-failure
+
+test-minisat:
+	@echo "MiniSat has no test suite"
+
+test-gtest:
+	cd $(DEPS_DIR)gtest/build && ctest --output-on-failure
+
 clean:
 	-rm -rf $(DEPS_DIR)cadical/build
 	-cd $(DEPS_DIR)cadical && make clean 2>/dev/null || true
