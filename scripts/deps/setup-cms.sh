@@ -7,8 +7,6 @@ install_dir=$(readlink -fm "${dep_dir}"/install)
 
 [ ! -d "${install_dir}" ] && mkdir -p "${install_dir}"
 
-echo "Setting up CMS in ${install_dir}"
-
 dep="cms"
 
 cd "${dep_dir}"
