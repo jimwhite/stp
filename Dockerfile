@@ -38,9 +38,12 @@ RUN ./scripts/deps/setup-minisat.sh
 RUN mkdir build
 WORKDIR /stp/build
 
-RUN cmake .. -DSTATICCOMPILE=ON \
+RUN cmake .. -DSTATICCOMPILE=ON -DENABLE_TESTING=ON \
   && cmake --build . --parallel \
   && cmake --install .
+
+# Run all tests (STP + dependencies)
+RUN /stp/scripts/run-all-tests.sh
 
 # Set up to run in a minimal container
 FROM scratch
