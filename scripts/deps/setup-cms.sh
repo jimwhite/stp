@@ -7,36 +7,37 @@ install_dir=$(readlink -fm "${dep_dir}"/install)
 
 [ ! -d "${install_dir}" ] && mkdir -p "${install_dir}"
 
-dep="cms"
+echo "Setting up CMS in ${install_dir}"
 
 cd "${dep_dir}"
 
-# Install cadical/cadiback first as siblings of cms (required by CMS find_library)
-git clone https://github.com/meelgroup/cadical
+# Build cadical (submodule already at correct commit)
 cd cadical
-git checkout -d 16dde5487287b349d19eb9f16642a797e38ca34f
 CXXFLAGS="-fPIC" ./configure
 make -j"$(nproc)"
 cd ..
 
-git clone https://github.com/meelgroup/cadiback
+# Build cadiback (submodule already at correct branch)
 cd cadiback
-git checkout mccomp2024
+# Create config.hpp manually since generate script needs .git directory
+cat > config.hpp << 'EOF'
+#define VERSION "1.0"
+#define GITID "submodule"
+#define BUILD ""
+EOF
 CXXFLAGS="-fPIC" ./configure
+touch config.hpp  # Prevent make from regenerating
 make -j"$(nproc)"
 cd ..
 
-git clone https://github.com/msoos/cryptominisat "${dep}"
-cd "${dep}"
-git checkout -d release/5.13.0
-mkdir build && cd build
-cmake .. \
-      -DCMAKE_BUILD_TYPE=Release \
+# Build cryptominisat (submodule already at correct tag)
+cd cryptominisat
+mkdir -p build && cd build
+cmake -DENABLE_ASSERTIONS=OFF \
       -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" \
-      -DENABLE_ASSERTIONS=OFF \
       -DSTATICCOMPILE=ON \
       ..
-cmake --build . --parallel "$(nproc)"
+cmake --build . --parallel
 cmake --install .
 cd ..
 

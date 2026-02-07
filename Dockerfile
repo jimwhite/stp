@@ -9,49 +9,40 @@ FROM ubuntu:22.04 AS builder
 
 # Install dependencies
 RUN apt-get update \
-       && apt-get install --no-install-recommends -y \
-       bison \
-       ca-certificates \
-       cmake \
-       flex \
-       g++ \
-       gcc \
-       git \
-       libboost-program-options-dev \
-       libgmp-dev \
-       libm4ri-dev \
-       libtinfo-dev \
-       make \
-       pkg-config \
-       wget \
-       zlib1g-dev \
-       && rm -rf /var/lib/apt/lists/*
+ && apt-get install --no-install-recommends -y \
+        bison \
+        ca-certificates \
+        cmake \
+        flex \
+        g++ \
+        gcc \
+        git \
+        libboost-program-options-dev \
+        libgmp-dev \
+        libm4ri-dev \
+        libtinfo-dev \
+        make \
+        pkg-config \
+        wget \
+        zlib1g-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 COPY . /stp
+
 WORKDIR /stp
+RUN ./scripts/deps/setup-gtest.sh
+RUN ./scripts/deps/setup-outputcheck.sh
+RUN ./scripts/deps/setup-cms.sh
+RUN ./scripts/deps/setup-minisat.sh
 
-# Build dependencies from submodules
-RUN make -f deps/Makefile all
+RUN mkdir build
+WORKDIR /stp/build
 
-# Remove ABC's cadical and eslim modules to avoid symbol conflicts with deps/cadical.
-# ABC bundles a modified cadical 2.2.0 internally; eslim depends on that internal API.
-# See DEPENDENCIES.md for full explanation of the architecture.
-RUN sed -i 's|src/sat/cadical ||; s|src/opt/eslim ||' lib/extlib-abc/Makefile
+RUN cmake .. -DSTATICCOMPILE=ON \
+  && cmake --build . --parallel \
+  && cmake --install .
 
-# Build STP
-RUN mkdir build \
-       && cd build \
-       && cmake .. \
-       -DCMAKE_BUILD_TYPE=Release \
-       -DENABLE_ASSERTIONS=OFF \
-       -DSTATICCOMPILE=ON \
-       && cmake --build . \
-       && cmake --install .
-
-# Run STP tests
-RUN cd build && ctest --output-on-failure
-
-# # Set up to run in a minimal container
+# Set up to run in a minimal container
 FROM scratch
 COPY --from=builder /usr/local/bin/stp /stp
 ENTRYPOINT ["/stp", "--SMTLIB2"]

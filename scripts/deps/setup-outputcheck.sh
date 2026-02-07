@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
 
-set -e -u -o pipefail
-
-dep_dir="deps"
-install_dir=$(readlink -fm "${dep_dir}"/install)
-
-[ ! -d "${install_dir}" ] && mkdir -p "${install_dir}"
-
-dep="OutputCheck"
-
-cd "${dep_dir}"
-git clone https://github.com/stp/OutputCheck "${dep}"
-cd ..
+# OutputCheck is a submodule, no build needed
+# Just verify it exists
+if [ -d "deps/OutputCheck" ]; then
+    echo "OutputCheck submodule present"
+else
+    echo "ERROR: OutputCheck submodule not found. Run: git submodule update --init"
+    exit 1
+fi
 
 # EOF

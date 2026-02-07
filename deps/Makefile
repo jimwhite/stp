@@ -39,7 +39,7 @@ $(DEPS_DIR)cadiback/libcadiback.a:
 	echo '#define BUILD ""' >> config.hpp && \
 	CXXFLAGS="-fPIC" ./configure && \
 	touch config.hpp && \
-	make -j$(NPROC)
+	make -j$(NPROC) libcadiback.a
 
 # CryptoMiniSat (depends on cadical, cadiback)
 cryptominisat: cadical cadiback $(DEPS_DIR)cryptominisat/build/lib/libcryptominisat5.a
@@ -102,10 +102,18 @@ test-gtest:
 	cd $(DEPS_DIR)gtest/build && ctest --output-on-failure
 
 clean:
-	-rm -rf $(DEPS_DIR)cadical/build
+	-rm -rf $(DEPS_DIR)cadical/build $(DEPS_DIR)cadical/makefile $(DEPS_DIR)cadical/src/makefile
 	-cd $(DEPS_DIR)cadical && make clean 2>/dev/null || true
+	-rm -rf $(DEPS_DIR)cadiback/makefile $(DEPS_DIR)cadiback/config.hpp $(DEPS_DIR)cadiback/*.o $(DEPS_DIR)cadiback/*.a
 	-cd $(DEPS_DIR)cadiback && make clean 2>/dev/null || true
 	-rm -rf $(DEPS_DIR)cryptominisat/build
 	-rm -rf $(DEPS_DIR)minisat/build
 	-rm -rf $(DEPS_DIR)gtest/build
 	-rm -rf $(INSTALL_DIR)
+
+# Full clean including STP build directory and ABC submodule restoration
+.PHONY: distclean
+distclean: clean
+	-rm -rf $(DEPS_DIR)../build
+	-git -C $(DEPS_DIR)../lib/extlib-abc checkout -- . 2>/dev/null || true
+	-git -C $(DEPS_DIR)../lib/extlib-abc clean -fd 2>/dev/null || true

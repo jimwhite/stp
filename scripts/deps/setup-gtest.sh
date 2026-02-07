@@ -7,15 +7,10 @@ install_dir=$(readlink -fm "${dep_dir}"/install)
 
 [ ! -d "${install_dir}" ] && mkdir -p "${install_dir}"
 
-dep="gtest"
-
-cd "${dep_dir}"
-git clone https://github.com/stp/googletest "${dep}"
-cd "${dep}"
-mkdir build && cd build
+cd "${dep_dir}/gtest"
+mkdir -p build && cd build
 cmake -DCMAKE_INSTALL_PREFIX:PATH="${install_dir}" ..
-cmake --build . 
+cmake --build . --parallel
 cmake --install .
-cd ..
 
 # EOF

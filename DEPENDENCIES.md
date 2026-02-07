@@ -10,151 +10,64 @@ This document explains the dependency relationships in STP and the build strateg
 - **Latest Release**: v2.3.4 (June 2024)
 - **Maintainers**: @msoos (Mate Soos), @delcypher, @thomaslhunter
 
-## Dependency Tree
+## Dependencies (Pinned Versions)
 
-```
-STP
-├── lib/extlib-abc          → berkeley-abc/abc (logic synthesis)
-│   └── src/sat/cadical     → BUNDLED cadical 2.2.0 (modified, internal)
-│   └── src/opt/eslim       → depends on ABC's internal cadical
-│
-├── deps/cadical            → meelgroup/cadical (fork of arminbiere/cadical)
-├── deps/cadiback           → meelgroup/cadiback (backbone extractor)
-│   └── requires ../cadical → expects meelgroup/cadical at sibling path
-├── deps/cryptominisat      → msoos/cryptominisat
-│   └── optionally uses cadical/cadiback
-├── deps/minisat            → stp/minisat (fork)
-├── deps/gtest              → Google Test
-└── deps/OutputCheck        → test output validation
-```
+All dependencies are git submodules pinned to specific tested commits:
 
-## CaDiCaL Fork Situation
+| Component | Submodule | Version/Commit | Source |
+|-----------|-----------|----------------|--------|
+| ABC | lib/extlib-abc | `95393064368b7c05da4d6f0264fc3419c175c7cb` | berkeley-abc/abc |
+| CaDiCaL | deps/cadical | `16dde5487287b349d19eb9f16642a797e38ca34f` | meelgroup/cadical |
+| Cadiback | deps/cadiback | branch `mccomp2024` | meelgroup/cadiback |
+| CryptoMiniSat | deps/cryptominisat | tag `release/5.13.0` | msoos/cryptominisat |
+| MiniSat | deps/minisat | latest | stp/minisat |
+| GTest | deps/gtest | latest | stp/googletest |
+| OutputCheck | deps/OutputCheck | latest | stp/OutputCheck |
 
-There are **two relevant CaDiCaL forks**:
+## Build Commands
 
-### 1. Upstream: arminbiere/cadical
-- **Repository**: [arminbiere/cadical](https://github.com/arminbiere/cadical)
-- **Latest Version**: v3.0.0 (2.6k stars, 34 releases)
-- **Status**: Actively maintained by original author
-- **API**: Standard ccadical.h interface
-
-### 2. Meelgroup Fork: meelgroup/cadical
-- **Repository**: [meelgroup/cadical](https://github.com/meelgroup/cadical)
-- **Version**: ~2.1.x (no releases, forked from upstream)
-- **Status**: Modified for CryptoMiniSat/Cadiback integration
-- **Used by**: deps/cadical in STP
-
-### Key Difference
-The meelgroup fork adds features needed by CryptoMiniSat and Cadiback but lags behind upstream versions. It's functional but not actively releasing.
-
-## ABC's Bundled CaDiCaL Problem
-
-**ABC bundles a complete, modified copy of CaDiCaL 2.2.0** in `src/sat/cadical/`. This is a deliberate design choice - ABC embeds all SAT solvers internally for self-containment.
-
-### Files in ABC's cadical (~80 source files)
-- Full CaDiCaL source (all .cpp files)
-- `cadicalSolver.c` - ABC's C wrapper
-- `cadical_ccadical.cpp` - C API implementation with ABC-specific modifications
-- `cadical_kitten.c` - embedded SMT solver
-
-### ABC's Modifications
-ABC's ccadical wrapper expects methods **not in upstream cadical**:
-- `ccadical_resize()` - preallocate variables
-- `ccadical_clauses()` - clause count
-- `ccadical_conflicts()` - conflict count
-
-### The Conflict
-When building STP:
-1. ABC compiles its bundled cadical → produces symbols like `ccadical_init`, `kitten_*`
-2. deps/cadical compiles separately → produces same symbols
-3. **Linker error**: duplicate symbol definitions
-
-Additionally, ABC's `eslim` module (in `src/opt/eslim/`) depends on ABC's internal cadical API, not the standard ccadical.h interface.
-
-## Build Strategy: Option A (Implemented)
-
-**Disable ABC's cadical and eslim modules entirely.**
-
-### Rationale
-1. **eslim** is an optional optimization module - STP functions without it
-2. ABC's other SAT solvers (glucose, kissat, etc.) remain available
-3. Eliminates symbol conflicts completely
-4. Keeps all projects at their current/upstream versions
-5. Simplest solution with minimal maintenance burden
-
-### Implementation
-```dockerfile
-# In Dockerfile:
-RUN sed -i 's|src/sat/cadical ||; s|src/opt/eslim ||' lib/extlib-abc/Makefile
-```
-
-This removes both modules from ABC's build without modifying any source files.
-
-## Alternative Approaches (Not Implemented)
-
-### Option B: Use Only ABC's CaDiCaL
-- Make deps/cadical, cadiback, cryptominisat use ABC's bundled version
-- **Problem**: ABC's cadical is modified with non-standard API; cadiback expects specific directory structure
-
-### Option C: Maintain STP Fork of ABC
-- Fork ABC, modify to use external cadical
-- **Problem**: High maintenance burden, ABC has no releases
-
-### Option D: Wrapper/Namespace Approach
-- Rename symbols in one cadical to avoid conflicts
-- **Problem**: Complex, error-prone, requires ongoing maintenance
-
-## Testing Strategy
-
-### STP Tests
+### Docker Build (Recommended)
 ```bash
-cd build && ctest --output-on-failure
+docker build --tag stp/stp .
+echo "(set-logic QF_BV)(check-sat)" | docker run --rm -i stp/stp
 ```
 
-### CryptoMiniSat Tests
+### Local Build
 ```bash
-cd deps/cryptominisat/build && ctest
+# Build dependencies (uses submodules)
+./scripts/deps/setup-gtest.sh
+./scripts/deps/setup-outputcheck.sh
+./scripts/deps/setup-cms.sh
+./scripts/deps/setup-minisat.sh
+
+# Build STP
+mkdir build && cd build
+cmake .. -DSTATICCOMPILE=ON
+cmake --build . --parallel
 ```
 
-### CaDiCaL Tests
+### Clean Commands
 ```bash
-cd deps/cadical && make test
+# Clean dependency builds
+rm -rf deps/cadical/build deps/cadiback/*.{o,a} deps/cadiback/{makefile,config.hpp}
+rm -rf deps/cryptominisat/build deps/minisat/build deps/gtest/build deps/install
+
+# Clean STP build
+rm -rf build
 ```
 
-### Cadiback Tests
-```bash
-cd deps/cadiback && make test
-```
+## Updating Dependencies
 
-### ABC Tests
-ABC has limited formal tests but includes:
-```bash
-cd lib/extlib-abc && make test  # if available
-```
+**IMPORTANT**: Do not update submodules without testing. The pinned versions are known to work together.
 
-### Full Test Suite
-The Dockerfile should be extended to run all tests during build to catch regressions.
+If updating is needed:
+1. Update one submodule at a time
+2. Run full build and test suite
+3. Document the new commit in this file
+4. Commit the submodule change
 
-## Version Tracking
+## Notes
 
-| Component | Current | Upstream | Notes |
-|-----------|---------|----------|-------|
-| STP | v2.3.4 | v2.3.4 | Latest |
-| CaDiCaL (deps) | ~2.1.x | v3.0.0 (arminbiere) | meelgroup fork |
-| CryptoMiniSat | v5.13.0 | v5.13.0 | Latest |
-| Cadiback | main | main | No releases |
-| MiniSat | stp fork | stp fork | Maintained |
-| ABC | main | main | No releases |
-
-## Maintenance Notes
-
-1. **ABC updates**: When updating ABC submodule, verify eslim/cadical modules are still excluded
-2. **CaDiCaL updates**: meelgroup fork may need manual merging from upstream
-3. **Test regularly**: Run full test suite after any dependency update
-4. **Static build**: Current Dockerfile produces static binary for deployment
-
-## References
-
-- [STP PR #496](https://github.com/stp/stp/pull/496) - ABC submodule addition (discusses cadical issues)
-- [ABC Integration Notes](https://github.com/berkeley-abc/abc) - ABC architecture
-- [CaDiCaL README](https://github.com/arminbiere/cadical) - Upstream documentation
+- ABC is included as a submodule at a specific commit that predates the bundled CaDiCaL changes
+- CaDiCaL is the meelgroup fork (not upstream arminbiere/cadical) required by Cadiback
+- Cadiback's `config.hpp` is generated by the setup script since it needs git metadata
